@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const openai = new OpenAI(process.env.OPENAI_API_KEY as string);
-
+const model = "text-davinci-003";
 const client = new Client({});
 
 client.on("qr", (qr) => {
@@ -28,15 +28,18 @@ client.on("message", async (message) => {
 client.initialize();
 
 async function generateConfusingQuestion(input: string): Promise<string> {
-  const prompt = `Generate a confusing and hard-to-understand question related to the topic "${input}". Do not generate code snippets.`;
+  const prompt = `Generate a confusing and hard-to-understand question related to this message "${input}". Do not generate code snippets.`;
 
   try {
     const response = await openai.complete({
-      engine: "davinci-codex",
-      prompt,
-      maxTokens: 50,
+      engine: model,
+      prompt: prompt,
+      maxTokens: 1024,
       n: 1,
-      temperature: 0.7,
+      temperature: 0,
+      topP: 1,
+      frequencyPenalty: 0,
+      presencePenalty: 0,
     });
 
     if (response.data.choices && response.data.choices.length > 0) {
