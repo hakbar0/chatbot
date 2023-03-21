@@ -1,5 +1,11 @@
 import { Client } from "whatsapp-web.js";
 import qrcode from "qrcode-terminal";
+import OpenAI from "openai-api";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const openai = new OpenAI(process.env.OPENAI_API_KEY as string);
 
 const client = new Client({});
 
@@ -14,25 +20,32 @@ client.on("ready", () => {
 
 client.on("message", async (message) => {
   console.log(message);
-  if (message.hasMedia) {
-    const media = await message.downloadMedia();
-    if (media.mimetype.includes("image")) {
-      const randomQuestion = getRandomQuestion();
-      message.reply(randomQuestion);
-    }
-  }
+  const receivedText = message.body;
+  const response = await generateConfusingQuestion(receivedText);
+  message.reply(response);
 });
 
 client.initialize();
 
-function getRandomQuestion(): string {
-  const questions = [
-    "What's your favorite hobby?",
-    "What's your favorite food?",
-    "What's your favorite color?",
-    "What's your favorite book?",
-    "What's your favorite movie?",
-  ];
+async function generateConfusingQuestion(input: string): Promise<string> {
+  const prompt = `Generate a confusing and hard-to-understand question related to the topic "${input}". Do not generate code snippets.`;
 
-  return questions[Math.floor(Math.random() * questions.length)];
+  try {
+    const response = await openai.complete({
+      engine: "davinci-codex",
+      prompt,
+      maxTokens: 50,
+      n: 1,
+      temperature: 0.7,
+    });
+
+    if (response.data.choices && response.data.choices.length > 0) {
+      return response.data.choices[0].text.trim();
+    } else {
+      return "I'm not sure how to respond to that.";
+    }
+  } catch (error) {
+    console.error(error);
+    return "errrmmmm";
+  }
 }
